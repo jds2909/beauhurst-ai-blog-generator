@@ -1,0 +1,1 @@
+# beauhurst-ai-blog-generator
