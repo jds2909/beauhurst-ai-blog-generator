@@ -73,3 +73,16 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Local Gemini check
+
+On Node 24 or later, copy `.env.example` to `.env.local` and set
+`NUXT_GEMINI_API_KEY` to your Google AI Studio key. The file is ignored by Git.
+`NUXT_GEMINI_MODEL` optionally overrides the default `gemini-3.5-flash-lite`.
+Run `npm run check:gemini` from the project root. It makes one Gemini request
+using selected facts from the fintech seed and prints the validated copy as JSON.
+The check runs from the terminal and leaves the rendered fintech article alone.
+
+Nuxt server code can call `generateArticleCopy` with the verified facts. The
+service reads the key and model from private runtime config when no explicit
+configuration is passed. Run `npm test` for the offline test suite.

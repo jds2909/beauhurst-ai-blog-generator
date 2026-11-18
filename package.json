@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "test": "node --test tests/company-csv.test.ts",
+    "test": "node --test",
+    "check:gemini": "node --env-file-if-exists=.env.local scripts/check-gemini.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

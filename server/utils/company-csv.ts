@@ -1,5 +1,7 @@
 import Papa from 'papaparse'
 
+// takes csv data into validated, structured company records
+
 const headerAliases = {
   company: ['company', 'company name'],
   totalRaised: ['total raised', 'total funding', 'total fundraising'],
