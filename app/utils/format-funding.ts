@@ -1,10 +1,15 @@
-const gbp = new Intl.NumberFormat('en-GB', {
+const currencyOptions = {
   style: 'currency',
   currency: 'GBP',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 3,
+} as const
+
+const wholePounds = new Intl.NumberFormat('en-GB', {
+  ...currencyOptions,
+  maximumFractionDigits: 0,
 })
+const poundsAndPence = new Intl.NumberFormat('en-GB', currencyOptions)
 
 export function formatFunding(pence: number): string {
-  return gbp.format(pence / 100)
+  const formatter = pence % 100 === 0 ? wholePounds : poundsAndPence
+  return formatter.format(pence / 100)
 }

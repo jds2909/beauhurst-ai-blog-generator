@@ -9,6 +9,7 @@
     "preview": "nuxt preview",
     "test": "node --test",
     "check:gemini": "node --env-file-if-exists=.env.local scripts/check-gemini.ts",
+    "check:articles": "node --env-file-if-exists=.env.local scripts/check-articles.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

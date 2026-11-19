@@ -5,9 +5,14 @@ export default defineNuxtConfig({
   runtimeConfig: {
     geminiApiKey: '',
     geminiModel: '',
+    supabaseUrl: '',
+    supabaseSecretKey: '',
     public: { siteUrl: '' },
   },
   nitro: {
     serverAssets: [{ baseName: 'datasets', dir: '~~/data' }],
+    vercel: {
+      functions: { runtime: 'nodejs24.x', maxDuration: 60 },
+    },
   },
 })

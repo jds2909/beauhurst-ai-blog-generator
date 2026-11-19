@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { Company } from '../../server/utils/company-csv'
-import type { calculateCompanyStatistics } from '../../server/utils/company-statistics'
+import type { ArticleContent } from '#shared/types/article'
 import { formatFunding } from '../utils/format-funding'
 
 defineProps<{
   title: string
   introduction: string
-  companies: Company[]
-  statistics: ReturnType<typeof calculateCompanyStatistics>
+  companies: ArticleContent['companies']
+  statistics: ArticleContent['statistics']
+  sections?: ArticleContent['sections']
 }>()
 </script>
 
@@ -17,6 +17,11 @@ defineProps<{
       <h1>{{ title }}</h1>
       <p class="introduction">{{ introduction }}</p>
     </header>
+
+    <section v-for="(section, index) in sections" :key="index" :aria-labelledby="`article-section-${index}`">
+      <h2 :id="`article-section-${index}`">{{ section.heading }}</h2>
+      <p>{{ section.body }}</p>
+    </section>
 
     <section aria-labelledby="funding-heading">
       <h2 id="funding-heading">Funding at a glance</h2>

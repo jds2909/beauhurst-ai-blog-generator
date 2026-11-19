@@ -7,9 +7,9 @@ try {
   const csv = await readFile(new URL('../data/fintech_companies_seed.csv', import.meta.url), 'utf8')
   const companies = parseCompanies(csv)
   const copy = await generateArticleCopy({
-    industry: 'UK fintech',
+    industry: 'UK Fintech',
     statistics: calculateCompanyStatistics(companies),
-    examples: companies,
+    companies,
   }, {
     geminiApiKey: process.env.NUXT_GEMINI_API_KEY,
     geminiModel: process.env.NUXT_GEMINI_MODEL,
