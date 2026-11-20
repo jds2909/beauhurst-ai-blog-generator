@@ -1,149 +1,91 @@
-# Nuxt Minimal Starter
+# Beauhurst AI Blog Generator
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A Nuxt application for the Beauhurst Graduate/Junior Web Developer technical assessment. It turns company fundraising CSVs into server-rendered ranking articles with a company table, regional insights and SEO metadata.
 
-## Setup
+[Public demo](https://beauhurst-ai-blog-generator.vercel.app/) · [Bundled fintech article](https://beauhurst-ai-blog-generator.vercel.app/blog/top-100-uk-fintech-companies)
 
-Make sure to install dependencies:
+The public Vercel demo uses `gemini-3.1-flash-lite`, which was tested successfully with multiple datasets. Assessors can generate articles without providing API keys. To try another industry, upload the [fictional UK gaming fixture](data/uk_gaming_companies_fixture.csv), enter **Gaming**, and select **Generate Article**.
 
-```bash
-# npm
-npm install
+## How it works
 
-# pnpm
-pnpm install
+1. **Nuxt 4, Vue and TypeScript** provide the upload form, Nitro API routes and server-rendered article pages. The form submits the CSV and industry name to `POST /api/articles`.
+2. **Papa Parse** parses the CSV on the server. TypeScript validation checks the headers, rows and GBP values. The server ranks companies by total raised, preserves CSV order for ties and calculates the total and median funding, company counts by region and the count of companies with no region.
+3. **Google Gemini** writes the introduction and sections from a bounded summary of the dataset. The server builds the title and meta description, validates the structure of the generated copy and substitutes approved placeholders with calculated values.
+4. **Supabase PostgreSQL** stores the copy, rankings and statistics together in a JSONB column. Nuxt retrieves the saved article by its unique URL (`/blog/<slug>`) and renders it with the shared article and ranking table components. The page includes a title, description and Open Graph metadata. Setting the site origin also enables canonical and Open Graph URLs.
+5. **Vercel** hosts the Nuxt server build and supplies the provider credentials as server-side environment variables.
 
-# yarn
-yarn install
+The bundled fintech article calculates its statistics from the [fintech seed CSV](data/fintech_companies_seed.csv) shipped with the app.
 
-# bun
-bun install
-```
+## Run locally
 
-## Development Server
+Use **Node.js 24.x (24.15.0 or later)** and npm. The committed lockfile pins the dependencies.
 
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
+```sh
+git clone https://github.com/jds2909/beauhurst-ai-blog-generator.git
+cd beauhurst-ai-blog-generator
+npm ci
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Open [localhost:3000](http://localhost:3000) and select the fintech article. These steps are sufficient to view it from a clean clone without Gemini or Supabase credentials.
 
-Build the application for production:
+### Configure article generation and storage
 
-```bash
-# npm
-npm run build
+To generate articles locally, configure both Gemini and Supabase. Opening an already saved article only requires access to the Supabase project that stores it.
 
-# pnpm
-pnpm build
+1. Create a Supabase project. In its **SQL Editor**, run the contents of [the articles migration](supabase/migrations/20261119000000_create_articles.sql) once. It creates `public.articles` with a unique slug, a JSONB content column and row-level security. The migration grants the service role access to read and insert rows.
+2. Copy [`.env.example`](.env.example) to the Git-ignored `.env.local` in the project root. Run `cp .env.example .env.local` in a POSIX shell or `Copy-Item .env.example .env.local` in PowerShell.
+3. Fill in the values below. Use the Supabase project URL and a secret API key from the same project. Keep both provider keys in private server configuration.
 
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-## Local Gemini check
-
-On Node 24 or later, copy `.env.example` to `.env.local` and set
-`NUXT_GEMINI_API_KEY` to your Google AI Studio key. The file is ignored by Git.
-`NUXT_GEMINI_MODEL` optionally overrides the default `gemini-3.5-flash-lite`.
-Run `npm run check:gemini` from the project root. It makes one Gemini request
-using selected facts from the fintech seed and prints the validated copy as JSON.
-The check runs from the terminal and leaves the rendered fintech article alone.
-
-Nuxt server code can call `generateArticleCopy` with the verified facts. The
-service reads the key and model from private runtime config when no explicit
-configuration is passed. Run `npm test` for the offline test suite.
-
-## Local Supabase article check
-
-1. Open the `beauhurst-ai-blog` project in Supabase. In SQL Editor, run
-   [the articles migration](supabase/migrations/20261119000000_create_articles.sql) once.
-2. Copy the project URL and a secret API key (`sb_secret_…`) into the existing
-   Git-ignored `.env.local` as `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SECRET_KEY`.
-3. Run `npm run check:articles`. Each run inserts one fictional healthtech article,
-   retrieves it, and prints its blog path. The sample stays in the database.
-4. Run `npm run dev -- --dotenv .env.local` and open the printed path on
-   `http://localhost:3000`. Refresh the page, then try
-   `/blog/unknown-article` to check the 404.
-
-Nuxt uses the saved title and description for server-rendered metadata. Set
-`NUXT_PUBLIC_SITE_URL` to the site's origin if you want canonical and Open Graph URLs.
-
-## Generate an article from a CSV
-
-With the Gemini and Supabase values in `.env.local` and the migration applied,
-run `npm run dev -- --dotenv .env.local`. Open `http://localhost:3000`, enter an
-industry name, and select a UTF-8 CSV of up to 1 MB with Company and Total Raised
-columns. You can use `data/fintech_companies_seed.csv` to try the form. Select
-**Generate Article** and refresh the generated URL to check the saved result.
-
-Successful uploads publish directly at a shareable URL. Share only datasets
-you intend to make public. Generated pages ask search engines to skip indexing.
-The server caps concurrent generation requests per process, and the homepage
-disables repeat submissions while a request is running. Anonymous callers can
-still consume provider quota and create many public records over time.
-
-The application writes each title and meta description from the industry and
-verified company count. Gemini receives a bounded summary and writes the
-introduction and sections using allowed placeholders for numeric facts. The
-server substitutes the values before saving. These checks validate the values
-and response structure. Editorial review is still needed to confirm that the
-surrounding prose uses each fact correctly and stays within the dataset's scope.
-
-## Deploy to Vercel
-
-Import the GitHub repository into Vercel. Use the **Nuxt** framework preset,
-the repository root and **Node.js 24.x**. Keep the default build settings so
-Vercel runs the Nuxt server build. Nitro packages the SSR pages, API routes and
-bundled fintech dataset in a Node function. The Vercel function limit is 60 seconds.
-
-Set these project environment variables for **Production** before the first deployment.
-
-| Variable | Value |
+| Variable | Purpose |
 | --- | --- |
-| `NUXT_GEMINI_API_KEY` | Gemini API key, stored as a Secret |
-| `NUXT_GEMINI_MODEL` | `gemini-3.1-flash-lite`, the model used in live workflow tests |
-| `NUXT_SUPABASE_URL` | URL of the Supabase project where the articles migration has been applied |
-| `NUXT_SUPABASE_SECRET_KEY` | Supabase secret API key, stored as a Secret |
-| `NUXT_PUBLIC_SITE_URL` | Stable HTTPS production origin, including the scheme |
+| `NUXT_GEMINI_API_KEY` | Google AI Studio API key for generating article copy. |
+| `NUXT_GEMINI_MODEL` | Set to `gemini-3.1-flash-lite` to match the tested deployment. The template specifies `gemini-3.5-flash-lite`, which is also the application's fallback when the variable is unset or blank. |
+| `NUXT_SUPABASE_URL` | Supabase project origin, such as the placeholder in the template. |
+| `NUXT_SUPABASE_SECRET_KEY` | Supabase secret API key for server-side reads and inserts. |
+| `NUXT_PUBLIC_SITE_URL` | Optional absolute site origin for canonical and Open Graph URLs, such as `http://localhost:3000` locally. |
 
-If Vercel assigns the production domain after the initial deployment, set
-`NUXT_PUBLIC_SITE_URL` and redeploy. Changes to environment variables apply to
-new deployments.
+Stop the existing dev server and restart it with the configured file.
 
-For local artifact verification, run `npm run build` with `NITRO_PRESET=vercel`
-in the process environment. The output is written to the Git-ignored
-`.vercel/output` directory.
+```sh
+npm run dev -- --dotenv .env.local
+```
+
+## CSV format
+
+Use a non-empty, comma-delimited UTF-8 `.csv` file with a header row, at least one company and a maximum size of 1 MiB (1,048,576 bytes). The industry name is required and limited to 100 characters.
+
+| Required field | Accepted headers |
+| --- | --- |
+| Company name | `Company`, `Company Name` |
+| Total fundraising | `Total Raised`, `Total Funding`, `Total Fundraising` |
+
+Optional headers are `Region`, `Stage`, `Employees`, `Description`, `Website` and `Industries`. Separate multiple industries in a cell with semicolons. Column order is flexible and header matching ignores case and extra whitespace. Each row must match the header's field count. Duplicate headers and multiple aliases for the same field are rejected. Unrecognised columns are ignored.
+
+Use non-negative GBP amounts with an optional pound sign and up to two decimal places. For example, `0`, `1250`, `1250.50` and `"£1,250.50"` are valid CSV values. Quote fields containing commas. Currency codes, other currencies, negative values and abbreviations such as `£1.2m` are rejected.
+
+## Test and build
+
+```sh
+npm test
+npm run build
+npm run preview
+```
+
+The offline tests cover CSV validation, fundraising calculations and formatting, Gemini response validation, article storage and the generation workflow. To load provider settings for the production preview, use `npm run preview -- --dotenv .env.local`.
+
+Two optional checks use `.env.local` and contact live services.
+
+- `npm run check:gemini` makes one Gemini request using selected fintech facts and prints the validated copy.
+- `npm run check:articles` inserts and reads back a fictional healthtech article, then prints its blog path. The sample stays in the database. Open the path in the configured local app to verify retrieval.
+
+### Vercel deployment
+
+For a separate deployment, import the repository into Vercel using the Nuxt preset, the repository root and Node.js 24.x. Use the default build settings and configure the variables above for Production. Set the public site URL to the stable HTTPS origin and redeploy after configuration changes. Nitro packages the server routes and bundled dataset in a Node function with a 60-second execution limit. A local build with `NITRO_PRESET=vercel` in the process environment writes the Vercel artifact to `.vercel/output`.
+
+## Limitations and security
+
+- Successful uploads publish immediately. The homepage lists only the bundled fintech article, so save your generated article's URL to revisit it. The `noindex` directive discourages search indexing. Anyone with the URL can still read the article and its company data, so upload only data you intend to publish.
+- The public endpoint accepts anonymous submissions and limits generation to two concurrent requests per server process. Anonymous callers can still consume provider quota and create records over time.
+- The upload is treated as the source of truth. Server checks validate figures and response structure. Review the generated prose for context and accuracy before sharing it. Generation depends on Gemini availability and quota, and saved articles depend on Supabase availability.
+- Only the Nuxt server uses the provider keys. The migration blocks direct table access for anonymous and authenticated client roles. Keep local credentials in `.env.local` and deployment credentials in Vercel's server environment.
